@@ -1,19 +1,19 @@
+ssh_server_setup_totp: false
+ssh_server_generate_primes: false
 ssh_server_config:
-  # Connection parameters.
+  # Connection and session parameters.
   port: 22
   keepalive:
     interval: 30
     max_failed: 2
   ratelimit:
-    drop_trigger: 10
-    drop_chance: 50
-    kill_trigger: 50
-  use_dns: false
-
-  # Session parameters.
+    trigger: 10
+    chance: 50
+    ceiling: 50
   auth_timeout: 120
   auth_attempts: 3
   max_user_sessions: 3
+  use_dns: false
 
   # Information display settings.
   print_motd: false
@@ -22,27 +22,25 @@ ssh_server_config:
 
   # Security and cryptography configuration.
   algorithms:
-    # Applies both to public key and host-based authentication.
-    pubkeys:
+    pubkey:
       - ssh-ed25519
       - ssh-rsa
-    hostkeys:
+    ca_signature:
       - ssh-ed25519
-    certificates:
-      - ssh-ed25519
+    hostkey:
+      # NOTE: For compatibility with SELinux, names should be kept true to the defaults of OpenSSH.
+      # NOTE: Applies both to the server's available host keys and host-based authentication accepted types.
+      - type: ed25519
+        filename: ssh-ed25519
     key_exchange:
       - curve25519-sha256
     mac:
       - umac-128-etm@openssh.com
     ciphers:
       - chacha20-poly1305@openssh.com
-    hashes:
+    hash:
       - sha256
   rekey_timeout: 600
-  # NOTE: For compatibility with default SELinux labels, the names should be kept original to the defaults of sshd.
-  host_keys:
-    - file: ssh_host_ed25519_key
-      type: ed25519
   force_command: none    # Set to "none" to disable this feature.
   chroot_directory: none # Set to "none" to disable this feature.
   accepted_env_vars: []  # Note that the TERM environment variable is always accepted.
@@ -54,13 +52,12 @@ ssh_server_config:
   deny_groups: []
   deny_users: []
   allow_users:  []
-  version_addendum: none
+  version_addendum: none  # Set to "none" to not send any version addendum to the client.
   expose_auth_info: false
 
   # Authentication options.
   authentication:
     use_pam: true
-    use_totp: false
     root_login: false
     methods:
       interactive:
@@ -69,13 +66,12 @@ ssh_server_config:
         enabled: false
       pubkey:
         enabled: true
-        authorization_command: none                   # Set to "none" to not specify any key authorization command.
-        authorization_user: nobody                    # Set to "nobody" to not specify any key authorization command.
-        revoked_keys_file: /etc/ssh/revoked-pki       # Set to "none" to specify any key revocation file.
-        authorized_keys_dir: /etc/ssh/authorized-keys # NOTE: Do not put a trailing slash in this path!
+        authorization_command: none           # Set to "none" to not specify any key authorization command.
+        authorization_user: nobody            # Set to "nobody" to not specify any key authorization command.
         certificates:
           # Certificates are treated by OpenSSH as public keys and if used are part of the public key auth method.
           # To not use certificates, disable everything in this section (you can leave pubkey enabled if you use it).
+          # NOTE: authorization_file is ignored if authorization_command is anything but "none".
           authorization_file: none    # Set to "none" to not specify any certificate authorization file.
           authorization_command: none # Set to "none" to not specify any certificate authorization command.
           authorization_user: nobody  # Set to "nobody" to not specify any certificate authorization command.
@@ -107,17 +103,17 @@ ssh_server_config:
   # Forwarding options.
   forwarding:
     xorg:
-      allow: false
+      enabled: false
       use_localhost: true
       display_offset: 10
       xauth_location: /usr/bin/xauth
     tcp:
-      allow: false
+      enabled: false
       gateway_ports: false
       permit_listen: []
       permit_open: []
     socket:
-      allow: false
+      enabled: false
       permission_mask: 0177
       bind_unlink: false
     ssh_agent: false
