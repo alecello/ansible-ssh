@@ -1,123 +1,124 @@
-# TODO: Document specific values when necessary (for example none to use default values/not specify a config line)
-# Connection parameters.
-ssh_server_port: 22
-ssh_server_keepalive:
-  interval: 30
-  max_failed: 2
-ssh_server_ratelimit:
-  drop_trigger: 10
-  drop_chance: 50
-  kill_trigger: 50
-ssh_server_use_dns: false
+ssh_server_config:
+  # Connection parameters.
+  port: 22
+  keepalive:
+    interval: 30
+    max_failed: 2
+  ratelimit:
+    drop_trigger: 10
+    drop_chance: 50
+    kill_trigger: 50
+  use_dns: false
 
-# Session parameters.
-ssh_server_auth_timeout: 120
-ssh_server_auth_attempts: 3
-ssh_server_max_user_sessions: 3
+  # Session parameters.
+  auth_timeout: 120
+  auth_attempts: 3
+  max_user_sessions: 3
 
-# Information display settings.
-ssh_server_print_motd: false
-ssh_server_print_last_log: true
-ssh_server_banner_file: none  # Set to "none" to disable the pre-authentication banner.
+  # Information display settings.
+  print_motd: false
+  print_last_log: true
+  banner_file: none  # Set to "none" to disable the pre-authentication banner.
 
-# Security and cryptography configuration.
-ssh_server_algorithms:
-  # Applies both to public key and host-based authentication.
-  pubkeys:
-    - ssh-ed25519
-    - ssh-rsa
-  hostkeys:
-    - ssh-ed25519
-  certificates:
-    - ssh-ed25519
-  key_exchange:
-    - curve25519-sha256
-  mac:
-    - umac-128-etm@openssh.com
-  ciphers:
-    - chacha20-poly1305@openssh.com
-  hashes:
-    - sha256
-ssh_server_rekey_timeout: 600
-# NOTE: For compatibility with default SELinux labels, the names should be kept original to the defaults of sshd.
-ssh_server_host_keys:
-  - file: ssh_host_ed25519_key
-    type: ed25519
-ssh_server_force_command: none    # Set to "none" to disable this feature.
-ssh_server_chroot_directory: none # Set to "none" to disable this feature.
-ssh_server_accepted_env_vars: []  # Note that the TERM environment variable is always accepted.
-ssh_server_enforced_env_vars: []
-ssh_server_permit_user_environment: false
-ssh_server_permit_user_rc: true
-ssh_server_permit_tty: true
-ssh_server_allow_groups: []
-ssh_server_deny_groups: []
-ssh_server_deny_users: []
-ssh_server_allow_users:  []
-ssh_server_version_addendum: none
-ssh_server_expose_auth_info: false
+  # Security and cryptography configuration.
+  algorithms:
+    # Applies both to public key and host-based authentication.
+    pubkeys:
+      - ssh-ed25519
+      - ssh-rsa
+    hostkeys:
+      - ssh-ed25519
+    certificates:
+      - ssh-ed25519
+    key_exchange:
+      - curve25519-sha256
+    mac:
+      - umac-128-etm@openssh.com
+    ciphers:
+      - chacha20-poly1305@openssh.com
+    hashes:
+      - sha256
+  rekey_timeout: 600
+  # NOTE: For compatibility with default SELinux labels, the names should be kept original to the defaults of sshd.
+  host_keys:
+    - file: ssh_host_ed25519_key
+      type: ed25519
+  force_command: none    # Set to "none" to disable this feature.
+  chroot_directory: none # Set to "none" to disable this feature.
+  accepted_env_vars: []  # Note that the TERM environment variable is always accepted.
+  enforced_env_vars: []
+  permit_user_environment: false
+  permit_user_rc: true
+  permit_tty: true
+  allow_groups: []
+  deny_groups: []
+  deny_users: []
+  allow_users:  []
+  version_addendum: none
+  expose_auth_info: false
 
-# Authentication options.
-ssh_server_authentication:
-  use_pam: true
-  root_login: false
-  methods:
-    interactive:
-      enabled: false
-    challenge:
-      enabled: false
-    pubkey:
-      enabled: true
-      authorization_command: none                   # Set to "none" to not specify any key authorization command.
-      authorization_user: nobody                    # Set to "nobody" to not specify any key authorization command.
-      revoked_keys_file: /etc/ssh/revoked-pki       # Set to "none" to specify any key revocation file.
-      authorized_keys_dir: /etc/ssh/authorized-keys # NOTE: Do not put a trailing slash in this path!
-      certificates:
-        # Certificates are treated by OpenSSH as public keys and if used are part of the public key auth method.
-        # To not use certificates, disable everything in this section (you can leave pubkey enabled if you use it).
-        authorization_file: none    # Set to "none" to not specify any certificate authorization file.
-        authorization_command: none # Set to "none" to not specify any certificate authorization command.
-        authorization_user: nobody  # Set to "nobody" to not specify any certificate authorization command.
-        host_certificate_file: none # Set to "none" to not specify any host certificate.
-        trusted_ca_file: none       # Set to "none" to not specify any trusted CA list.
-    password:
-      enabled: false
-      allow_empty: false
-      allow_root: false
-    kerberos:
-      enabled: false
-      local_password_fallback: false
-      clean_ticket_cache_on_logout: true
-    gssapi:
-      enabled: false
-      clean_creds_cache_on_logout: true
-    hostbased:
-      enabled: false
-      force_resolve_hostname: true
-      ignore_user_rhosts: true
-      ignore_user_known_hosts: true
-  # Defines the possible documentation stacks that OpenSSH can use.
-  # For further information see: TODO.
-  stacks:
-    - name: PublicKeyAuthentication
-      elements:
-        - publickey
+  # Authentication options.
+  authentication:
+    use_pam: true
+    use_totp: false
+    root_login: false
+    methods:
+      interactive:
+        enabled: false
+      challenge:
+        enabled: false
+      pubkey:
+        enabled: true
+        authorization_command: none                   # Set to "none" to not specify any key authorization command.
+        authorization_user: nobody                    # Set to "nobody" to not specify any key authorization command.
+        revoked_keys_file: /etc/ssh/revoked-pki       # Set to "none" to specify any key revocation file.
+        authorized_keys_dir: /etc/ssh/authorized-keys # NOTE: Do not put a trailing slash in this path!
+        certificates:
+          # Certificates are treated by OpenSSH as public keys and if used are part of the public key auth method.
+          # To not use certificates, disable everything in this section (you can leave pubkey enabled if you use it).
+          authorization_file: none    # Set to "none" to not specify any certificate authorization file.
+          authorization_command: none # Set to "none" to not specify any certificate authorization command.
+          authorization_user: nobody  # Set to "nobody" to not specify any certificate authorization command.
+          host_certificate_file: none # Set to "none" to not specify any host certificate.
+          trusted_ca_file: none       # Set to "none" to not specify any trusted CA list.
+      password:
+        enabled: false
+        allow_empty: false
+        allow_root: false
+      kerberos:
+        enabled: false
+        local_password_fallback: false
+        clean_ticket_cache_on_logout: true
+      gssapi:
+        enabled: false
+        clean_creds_cache_on_logout: true
+      hostbased:
+        enabled: false
+        force_resolve_hostname: true
+        ignore_user_rhosts: true
+        ignore_user_known_hosts: true
+    # Defines the possible documentation stacks that OpenSSH can use.
+    # For further information see: TODO.
+    stacks:
+      - name: PublicKeyAuthentication
+        elements:
+          - publickey
 
-# Forwarding options.
-ssh_server_forwarding:
-  xorg:
-    allow: false
-    use_localhost: true
-    display_offset: 10
-    xauth_location: /usr/bin/xauth
-  tcp:
-    allow: false
-    gateway_ports: false
-    permit_listen: []
-    permit_open: []
-  socket:
-    allow: false
-    permission_mask: 0177
-    bind_unlink: false
-  ssh_agent: false
-  tunneling: false
+  # Forwarding options.
+  forwarding:
+    xorg:
+      allow: false
+      use_localhost: true
+      display_offset: 10
+      xauth_location: /usr/bin/xauth
+    tcp:
+      allow: false
+      gateway_ports: false
+      permit_listen: []
+      permit_open: []
+    socket:
+      allow: false
+      permission_mask: 0177
+      bind_unlink: false
+    ssh_agent: false
+    tunneling: false
