@@ -1,0 +1,20 @@
+---
+- name: Install OpenSSH
+  become: true
+  package:
+    name: openssh
+    state: present
+
+# Note: On RHEL based systems this requires EPEL to be enabled.
+- name: Install the Google Authenticator PAM library
+  become: true
+  package:
+    name: google-authenticator
+    state: present
+  when: ssh_server_setup_totp
+
+- name: Enable the OpenSSH system service
+  become: true
+  service:
+    name: sshd.service
+    enabled: true

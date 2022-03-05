@@ -1,0 +1,15 @@
+---
+- name: Check wether SELinux is available on the system
+  set_fact:
+    ssh_server_selinux_available: "{{ ansible_selinux != False }}"
+    ssh_server_selinux_enabled: "{{ ansible_selinux != False and ansible_selinux.status == 'enabled' }}"
+
+# Make sure the required products are installed.
+- include_tasks: install.yml
+
+# Setup the server
+- include_tasks: setup.yml
+
+# Regenerate the SSH server prime numbers
+- include_tasks: primes.yml
+  when: ssh_server_generate_primes

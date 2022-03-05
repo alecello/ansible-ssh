@@ -1,0 +1,23 @@
+---
+- name: Generate the candidate prime numbers
+  become: true
+  command:
+    cmd: ssh-keygen -G /tmp/moduli.candidates -b 2048
+
+- name: Select the candidate prime numbers
+  become: true
+  command:
+    cmd: ssh-keygen -T /tmp/ssh-generated-moduli -f /tmp/moduli.candidates
+
+- name: Install the candidate prime numbers
+  become: true
+  copy:
+    dest: "/etc/ssh/moduli"
+    src: /tmp/ssh-generated-moduli
+    remote_src: yes
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+  notify:
+    - Restore SELinux labels
+    - Restart the SSH service

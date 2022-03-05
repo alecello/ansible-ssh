@@ -1,0 +1,14 @@
+---
+- name: Restore SELinux labels
+  become: true
+  command:
+    cmd: "restorecon -FRv {{ item }}"
+  loop:
+    - "/etc/ssh"
+
+- name: Restart the SSH service
+  become: true
+  service:
+    name:
+      - sshd.service
+    status: restarted

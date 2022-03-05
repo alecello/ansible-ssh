@@ -1,0 +1,186 @@
+# {{ ansible_managed }}
+# Load user configuration if available.
+# Configuration shall be placed in /etc/ssh/config.d and will overwrite these values if a collision happens.
+Include config.d/*
+
+# Configure the loglevel of the server to use syslog's auth label and informational level.
+SysLogFacility AUTH
+LogLevel INFO
+
+# Use the internal SFTP server for SFTP connections.
+Subsystem sftp internal-sftp
+
+# Enable strict file and directory permissions checks for SSH files.
+StrictModes yes
+
+# Configure PID file location.
+PidFile /run/sshd.pid
+
+# Compress network communication.
+Compression yes
+
+# Configure the server port and the IPv4 QoS parameter for low-latency.
+Port {{ ssh_server_config.port }}
+IPQoS af21
+
+# Configure SSH's own keepalive and disable TCP keepalive.
+ClientAliveInterval {{ ssh_server_config.keepalive.interval }}
+ClientAliveCountMax {{ ssh_server_config.keepalive.max_failed }}
+TCPKeepAlive no
+
+# Configures the rate-limiting protection with the format trigger:chance:ceiling.
+#   - trigger: number of concurrent authentication attempts at which the server will start to randomly refuse connections.
+#   - chance: chance that the server will kill any given authentication attempt when the trigger is reached.
+#   - ceiling: number of concurrent authentication attempts at which the server will start to terminate all incoming connections.
+# Configure restrictions for the number of sessions and authentication attempts per user.
+MaxStartups {{ ssh_server_config.ratelimit.trigger }}:{{ ssh_server_config.ratelimit.chance }}:{{ ssh_server_config.ratelimit.ceiling }}
+LoginGraceTime {{ ssh_server_config.auth_timeout }}
+MaxAuthTries {{ ssh_server_config.auth_attempts }}
+MaxSessions {{ ssh_server_config.max_user_sessions }}
+
+# Configure whether to use DNS name resolution for incoming connections.
+# NOTE: DNS can be spoofed, be mindful of enabling this when host-based authentication is enabled!
+UseDNS {{ 'yes' if ssh_server_config.use_dns else 'no' }}
+
+PrintMotd {{ 'yes' if ssh_server_config.print_motd else 'no' }}
+PrintLastLog {{ 'yes' if ssh_server_config.print_last_log else 'no' }}
+Banner {{ ssh_server_config.banner_file }}
+
+# Algorithm configuration.
+PubkeyAcceptedKeyTypes {{ ssh_server_config.algorithms.pubkey | join(',') }}
+CASignatureAlgorithms {{ ssh_server_config.algorithms.ca_signature | join(',') }}
+HostKeyAlgorithms {{ ssh_server_config.algorithms.hostkey | map(attribute='type') | join(',') }}
+{% if services.ssh.host_keys | length -%}
+HostKey {{ '/etc/ssh/' | product(ssh_server_config.algorithms.hostkey | map(attribute='filename')) | map('join') | join(' ') }}
+{%- endif %}
+KexAlgorithms {{ ssh_server_config.algorithms.key_exchange | join(',') }}
+MACs {{ ssh_server_config.algorithms.mac | join(',') }}
+Ciphers {{ ssh_server_config.algorithms.ciphers | join(',') }}
+FingerPrintHash {{ ssh_server_config.algorithms.hash | join(',') }}
+RekeyLimit default {{ ssh_server_config.algorithms.rekey_timeout }}
+
+# SSH policy configuration.
+ForceCommand {{ ssh_server_config.force_command }}
+ChrootDirectory {{ ssh_server_config.chroot_directory }}
+{% if ssh_server_config.accepted_env_vars | length -%}
+AcceptEnv {{ ssh_server_config.accepted_env_vars | join(' ') }}
+{%- else -%}
+AcceptEnv none
+{%- endif %}
+{% if ssh_server_config.enforced_env_vars | length -%}
+SetEnv {{ ssh_server_config.enforced_env_vars | join(' ') }}
+{%- endif %}
+PermitUserEnvironment {{ 'yes' if ssh_server_config.permit_user_environment else 'no' }}
+PermitUserRC {{ 'yes' if ssh_server_config.permit_user_rc else 'no' }}
+PermitTTY {{ 'yes' if ssh_server_config.permit_tty else 'no' }}
+
+{%- if ssh_server_config.allow_groups | length %}
+AllowGroups {{ ssh_server_config.allow_groups | join(' ') }}
+{%- endif -%}
+{%- if ssh_server_config.deny_groups | length %}
+DenyGroups {{ ssh_server_config.deny_groups | join(' ') }}
+{%- endif -%}
+{%- if ssh_server_config.deny_users | length %}
+DenyUsers {{ ssh_server_config.deny_users | join(' ') }}
+{%- endif -%}
+{%- if ssh_server_config.allow_users | length %}
+AllowUsers {{ ssh_server_config.allow_users | join(' ') }}
+{%- endif %}
+
+# Information disclosure configuration.
+VersionAddendum {{ ssh_server_config.version_addendum }}
+ExposeAuthInfo {{ 'yes' if ssh_server_config.expose_auth_info else 'no' }}
+
+
+
+
+
+
+
+# Authentication settings.
+UsePAM {{ ssh_server_config.authentication.use_pam }}
+{% if ssh_server_config.authentication.root_login -%}
+PermitRootLogin {{ 'yes' if ssh_server_config.authentication.password.allow_root else 'prohibit-password' }}
+{%- else -%}
+PermitRootLogin no
+{%- endif %}
+
+KbdInteractiveAuthentication {{ 'yes' if ssh_server_config.authentication.interactive.enabled else 'no' }}
+ChallengeResponseAuthentication {{ 'yes' if ssh_server_config.authentication.challenge.enabled else 'no' }}
+PubkeyAuthentication {{ 'yes' if ssh_server_config.authentication.pubkey.enabled else 'no' }}
+PasswordAuthentication {{ 'yes' if ssh_server_config.authentication.password.enabled else 'no' }}
+
+{% if ssh_server_config.authentication.pubkey.authorization_command != 'none' -%}
+AuthorizedKeysCommand {{ ssh_server_config.authentication.pubkey.authorization_command }}
+{%- endif %}
+{%- if ssh_server_config.authentication.pubkey.authorization_user != 'nobody' -%}
+AuthorizedKeysCommandUser {{ ssh_server_config.authentication.pubkey.authorization_user }}
+{%- endif %}
+AuthorizedKeysFile /etc/ssh/authorized-keys/%u
+RevokedKeys /etc/ssh/revoked-keys
+
+{% if services.ssh.security.certificates.authorization_command != 'none' -%}
+AuthorizedPrincipalsCommand {{ services.ssh.security.certificates.authorization_command }}
+{%- endif %}
+{%- if services.ssh.security.certificates.authorization_user != 'nobody' -%}
+AuthorizedPrincipalsCommandUser {{ services.ssh.security.certificates.authorization_user }}
+{%- endif %}
+{% if services.ssh.security.certificates.authorization_file != 'none' and ssh_server_config.authentication.pubkey.certificates.authorization_command == 'none' -%}
+AuthorizedPrincipalsFile {{ services.ssh.security.certificates.authorization_file }}
+{%- endif %}
+{% if services.ssh.paths.host_certificate_file != 'none' -%}
+HostCertificate {{ services.ssh.paths.configuration_root }}/{{ services.ssh.paths.host_certificate_file }}
+{%- else -%}
+HostCertificate none
+{%- endif %}
+{% if services.ssh.paths.user_ca_keys_file != 'none' %}
+TrustedUserCAKeys {{ services.ssh.paths.configuration_root }}/{{ services.ssh.paths.user_ca_keys_file }}
+{%- else -%}
+TrustedUserCAKeys none
+{%- endif -%}
+
+PermitEmptyPasswords {{ 'yes' if ssh_server_config.authentication.password.allow_empty else 'no' }}
+
+KerberosAuthentication {{ 'yes' if ssh_server_config.authentication.kerberos.enabled else 'no' }}
+KerberosOrLocalPasswd {{ 'yes' if ssh_server_config.authentication.kerberos.local_password_fallback else 'no' }}
+KerberosTicketCleanup {{ 'yes' if ssh_server_config.authentication.kerberos.clean_ticket_cache_on_logout else 'no' }}
+
+GSSAPIAuthentication {{ 'yes' if ssh_server_config.authentication.gssapi.enabled else 'no' }}
+GSSAPICleanupCredentials {{ 'yes' if ssh_server_config.authentication.gssapi.clean_creds_cache_on_logout else 'no' }}
+
+HostBasedAuthentication {{ 'yes' if ssh_server_config.authentication.hostbased.enabled else 'no' }}
+HostbasedAcceptedKeyTypes {{ ssh_server_config.algorithms.hostkey | map(attribute='type') | join(',') }}
+HostbasedUsesNameFromPacketOnly {{ 'no' if ssh_server_config.authentication.hostbased.force_resolve_hostname else 'yes' }}
+IgnoreRhosts {{ 'yes' if ssh_server_config.authentication.hostbased.ignore_user_rhosts else 'no' }}
+IgnoreUserKnownHosts {{ 'yes' if ssh_server_config.authentication.hostbased.ignore_user_known_hosts else 'no' }}
+
+{% set authstack = [] -%}
+{%- for stack in services.ssh.security.authentication_methods -%}
+{{ authstack.append( stack.elements | join(',')) }}
+{%- endfor -%}
+# Authentication stack configuration.
+AuthenticationMethods {{ authstack | join(' ') }}
+
+# XOrg forwarding settings.
+X11Forwarding {{ 'yes' if ssh_server_config.forwarding.xorg.enabled else 'no' }}
+X11UseLocalHost {{ 'yes' if ssh_server_config.forwarding.xorg.use_localhost else 'no' }}
+XAuthLocation {{ ssh_server_config.forwarding.xorg.xauth_location }}
+X11DisplayOffset {{ ssh_server_config.forwarding.xorg.display_offset }}
+
+# TCP port forwarding settings.
+AllowTCPForwarding {{ 'yes' if ssh_server_config.forwarding.tcp.enabled else 'no' }}
+GatewayPorts {{ 'yes' if ssh_server_config.forwarding.tcp.gateway_ports else 'no' }}
+{% if ssh_server_config.forwarding.tcp.permit_listen | length -%}
+PermitListen {{ ssh_server_config.forwarding.tcp.permit_listen | join(' ') }}
+{%- endif %}
+{% if ssh_server_config.forwarding.tcp.permit_open | length -%}
+PermitOpen {{ ssh_server_config.forwarding.tcp.permit_open | join(' ') }}
+{%- endif %}
+
+# UNIX socket forwarding settings.
+AllowStreamLocalForwarding {{ 'yes' if ssh_server_config.forwarding.socket.enabled else 'no' }}
+StreamLocalBindMask {{ ssh_server_config.forwarding.socket.permission_mask }}
+StreamLocalBindUnlink {{ 'yes' if ssh_server_config.forwarding.socket.bind_unlink else 'no' }}
+
+AllowAgentForwarding {{ 'yes' if ssh_server_config.forwarding.ssh_agent else 'no' }}
+PermitTunnel {{ 'yes' if ssh_server_config.forwarding.tunneling else 'no' }}

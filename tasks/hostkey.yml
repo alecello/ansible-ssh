@@ -1,0 +1,26 @@
+---
+- name: "Check wether the {{ item.type }} host key exists"
+  become: true
+  stat:
+    path: "/etc/ssh/{{ item.filename }}"
+  register: ssh_server_collected
+
+- name: "Create the {{ item.type }} host key"
+  become: true
+  command:
+    cmd: "ssh-keygen -t {{ item.type }} -N '' -f /etc/ssh/{{ item.filename }}"
+  when: not ssh_server_collected.stat.exists
+  notify: Restart the SSH service
+
+- name: "Set the permissions for the {{ item.type }} host key"
+  become: true
+  file:
+    path: "{{ keyfile }}"
+    owner: root
+    group: root
+    mode: u=rw,g=,o=
+  loop_control:
+    loop_var: keyfile
+  loop:
+   - "/etc/ssh/{{ item.filename }}"
+   - "/etc/ssh/{{ item.filename }}.pub"
