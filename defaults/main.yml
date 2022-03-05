@@ -1,0 +1,122 @@
+# TODO: Document specific values when necessary (for example none to use default values/not specify a config line)
+# Connection parameters.
+ssh_server_port: 22
+ssh_server_keepalive:
+  interval:   30
+  max_failed: 2
+ssh_server_auth_limiting:
+  drop_trigger: 10
+  drop_chance:  50
+  kill_trigger: 50
+ssh_server_use_dns: false
+
+# Session parameters.
+ssh_server_auth_timeout: 120
+ssh_server_auth_attempts: 3
+ssh_server_max_user_sessions: 3
+
+# Security and cryptography configuration.
+ssh_server_algorithms:
+  # Also applies to host-based authentication.
+  pubkeys:
+    - ssh-ed25519
+    - ssh-rsa
+  hostkeys:
+    - ssh-ed25519
+  certificates:
+    - ssh-ed25519
+  key_exchange:
+    - curve25519-sha256
+  mac:
+    - umac-128-etm@openssh.com
+  ciphers:
+    - chacha20-poly1305@openssh.com
+  hashes:
+    - sha256
+ssh_server_rekey_timeout: 600
+# NOTE: For compatibility with default SELinux labels, the names should be kept original to the defaults of sshd.
+ssh_server_host_keys:
+  - file: ssh_host_ed25519_key
+    type: ed25519
+ssh_server_force_command: none    # Set to "none" to disable.
+ssh_server_chroot_directory: none # Set to "none" to disable.
+ssh_server_accepted_env_vars: []  # Note that the TERM environment variable is always accepted.
+ssh_server_enforced_env_vars: []
+ssh_server_permit_user_environment: false
+ssh_server_permit_user_rc: true
+ssh_server_permit_tty: true
+ssh_server_allow_groups: []
+ssh_server_deny_groups: []
+ssh_server_deny_users: []
+ssh_server_allow_users:  []
+ssh_server_version_addendum: none
+ssh_server_expose_auth_info: false
+
+# Authentication options.
+ssh_server_authentication:
+  use_pam: true
+  root_login: false
+  methods:
+    interactive: false
+    challenge: false
+    pubkey:
+      enabled: true
+      authorization_command: none # Set to "none" to disable usage of an authorization command.
+      authorization_user: nobody  # Set to "nobody" to disable usage of an authorization command.
+    password:
+      enabled: false
+      allow_empty: false
+      allow_root: false
+    kerberos:
+      enabled: false
+      local_password_fallback: false
+      clean_ticket_cache_on_logout: true
+    gssapi:
+      enabled: false
+      clean_creds_cache_on_logout: true
+    hostbased:
+      enabled: false
+      force_resolve_hostname: true
+      ignore_user_rhosts: true
+      ignore_user_known_hosts: true
+# TODO: Reference documentation on this.
+ssh_server_authentication_stacks:
+  - name: PublicKeyAuthentication
+    elements:
+      - publickey
+ssh_server_user_certificates:
+  # No information in the manual about what method takes precedence. Use only one please.
+  authorization_file: none    # Set to "none" to disable.
+  authorization_command: none # Set to "none" to disable.
+  authorization_user: nobody  # Set to "nobody" to disable.
+
+# Forwarding options.
+ssh_server_forwarding:
+  xorg:
+    allow: false
+    use_localhost: true
+    display_offset: 10
+  tcp:
+    allow: false
+    gateway_ports: false
+    permit_listen: []
+    permit_open: []
+  socket:
+    allow: false
+    permission_mask: 0177
+    bind_unlink: false
+  agent_forwarding: false
+  tunneling: false
+
+# Paths configuration.
+# NOTE: Do NOT terminate directory paths with a "/"!
+ssh_server_xauth_location: /usr/bin/xauth
+ssh_server_revoked_keys_file: /etc/ssh/revoked-pki
+ssh_server_authorized_keys_dir: /etc/ssh/authorized-keys
+ssh_server_user_ca_keys_file: none      # Set to "none" to disable.
+ssh_server_host_certificate_file: none  # Set to "none" to disable.
+ssh_server_banner_file: none            # Set to "none" to disable.
+
+# Information display settings.
+ssh_server_print_motd: false
+ssh_server_print_last_log: true
