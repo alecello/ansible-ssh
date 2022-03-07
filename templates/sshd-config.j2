@@ -50,9 +50,7 @@ Banner {{ ssh_server_config.banner_file }}
 PubkeyAcceptedKeyTypes {{ ssh_server_config.algorithms.pubkey | join(',') }}
 CASignatureAlgorithms {{ ssh_server_config.algorithms.ca_signature | join(',') }}
 HostKeyAlgorithms {{ ssh_server_config.algorithms.hostkey | map(attribute='type') | join(',') }}
-{% if services.ssh.host_keys | length -%}
 HostKey {{ '/etc/ssh/' | product(ssh_server_config.algorithms.hostkey | map(attribute='filename')) | map('join') | join(' ') }}
-{%- endif %}
 KexAlgorithms {{ ssh_server_config.algorithms.key_exchange | join(',') }}
 MACs {{ ssh_server_config.algorithms.mac | join(',') }}
 Ciphers {{ ssh_server_config.algorithms.ciphers | join(',') }}
@@ -91,12 +89,6 @@ AllowUsers {{ ssh_server_config.allow_users | join(' ') }}
 VersionAddendum {{ ssh_server_config.version_addendum }}
 ExposeAuthInfo {{ 'yes' if ssh_server_config.expose_auth_info else 'no' }}
 
-
-
-
-
-
-
 # Authentication settings.
 UsePAM {{ ssh_server_config.authentication.use_pam }}
 {% if ssh_server_config.authentication.root_login -%}
@@ -119,22 +111,22 @@ AuthorizedKeysCommandUser {{ ssh_server_config.authentication.pubkey.authorizati
 AuthorizedKeysFile /etc/ssh/authorized-keys/%u
 RevokedKeys /etc/ssh/revoked-keys
 
-{% if services.ssh.security.certificates.authorization_command != 'none' -%}
-AuthorizedPrincipalsCommand {{ services.ssh.security.certificates.authorization_command }}
+{% if ssh_server_config.authentication.methods.pubkey.certificates.authorization_command != 'none' -%}
+AuthorizedPrincipalsCommand {{ ssh_server_config.authentication.methods.pubkey.certificates.authorization_command }}
 {%- endif %}
-{%- if services.ssh.security.certificates.authorization_user != 'nobody' -%}
-AuthorizedPrincipalsCommandUser {{ services.ssh.security.certificates.authorization_user }}
+{%- if ssh_server_config.authentication.methods.pubkey.certificates.authorization_user != 'nobody' -%}
+AuthorizedPrincipalsCommandUser {{ ssh_server_config.authentication.methods.pubkey.certificates.authorization_user }}
 {%- endif %}
-{% if services.ssh.security.certificates.authorization_file != 'none' and ssh_server_config.authentication.pubkey.certificates.authorization_command == 'none' -%}
-AuthorizedPrincipalsFile {{ services.ssh.security.certificates.authorization_file }}
+{% if ssh_server_config.authentication.methods.pubkey.certificates.authorization_file != 'none' and ssh_server_config.authentication.pubkey.certificates.authorization_command == 'none' -%}
+AuthorizedPrincipalsFile {{ ssh_server_config.authentication.methods.pubkey.certificates.authorization_file }}
 {%- endif %}
-{% if services.ssh.paths.host_certificate_file != 'none' -%}
-HostCertificate {{ services.ssh.paths.configuration_root }}/{{ services.ssh.paths.host_certificate_file }}
+{% if ssh_server_config.authentication.methods.pubkey.certificates.host_certificate_file != 'none' -%}
+HostCertificate /etc/ssh/{{ ssh_server_config.authentication.methods.pubkey.certificates.host_certificate_file }}
 {%- else -%}
 HostCertificate none
 {%- endif %}
-{% if services.ssh.paths.user_ca_keys_file != 'none' %}
-TrustedUserCAKeys {{ services.ssh.paths.configuration_root }}/{{ services.ssh.paths.user_ca_keys_file }}
+{% if ssh_server_config.authentication.methods.pubkey.certificates.trusted_ca_file != 'none' %}
+TrustedUserCAKeys /etc/ssh/{{ ssh_server_config.authentication.methods.pubkey.certificates.trusted_ca_file }}
 {%- else -%}
 TrustedUserCAKeys none
 {%- endif -%}
@@ -155,7 +147,7 @@ IgnoreRhosts {{ 'yes' if ssh_server_config.authentication.hostbased.ignore_user_
 IgnoreUserKnownHosts {{ 'yes' if ssh_server_config.authentication.hostbased.ignore_user_known_hosts else 'no' }}
 
 {% set authstack = [] -%}
-{%- for stack in services.ssh.security.authentication_methods -%}
+{%- for stack in ssh_server_config.authentication.stacks -%}
 {{ authstack.append( stack.elements | join(',')) }}
 {%- endfor -%}
 # Authentication stack configuration.
