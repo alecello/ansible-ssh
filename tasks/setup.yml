@@ -27,7 +27,7 @@
     state: directory
   notify: Restore SELinux labels
 
-- name: Enumerate the public key authorization list files
+- name: Enumerate the public key authorization files
   become: true
   find:
     paths: "/etc/ssh/authorized-keys"
@@ -35,7 +35,7 @@
     follow: no
   register: ssh_server_collected
 
-- name: Correct owner and permissions for the public key authorization list files
+- name: Correct owner and permissions for the public key authorization files
   become: true
   file:
     path: "{{ item.path }}"

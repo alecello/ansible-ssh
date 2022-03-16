@@ -1,4 +1,5 @@
 ssh_server_setup_totp: false
+
 ssh_server_generate_primes: false
 ssh_server_config:
   # Connection and session parameters.
