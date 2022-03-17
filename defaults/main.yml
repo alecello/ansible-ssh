@@ -1,6 +1,7 @@
 ssh_server_setup_totp: false
 
 ssh_server_generate_primes: false
+ssh_server_restart_service: true
 ssh_server_config:
   # Connection and session parameters.
   port: 22
@@ -13,6 +14,7 @@ ssh_server_config:
     ceiling: 50
   auth_timeout: 120
   auth_attempts: 3
+  auth_delay: 3
   max_user_sessions: 3
   use_dns: false
 

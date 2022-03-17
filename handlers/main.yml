@@ -5,6 +5,9 @@
     cmd: "restorecon -FRv {{ item }}"
   loop:
     - "/etc/ssh"
+  when:
+    - ssh_server_selinux_available
+    - ssh_server_selinux_enabled
 
 - name: Restart the SSH service
   become: true
@@ -12,3 +15,4 @@
     name:
       - sshd.service
     status: restarted
+  when: ssh_server_restart_service
