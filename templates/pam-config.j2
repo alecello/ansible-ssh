@@ -1,0 +1,37 @@
+#%PAM-1.0
+# {{ ansible_managed }}
+# Enable a delay between successive authentications of a {{ ssh_server_config.auth_delay }} seconds.
+auth required pam_faildelay.so delay={{ ssh_server_config.auth_delay }}000000
+
+# Disable login with SSH if /etc/nologin exists. Also displays content of said file to user on rejection.
+auth requisite pam_nologin.so file=/etc/nologin
+
+# Require root logins to happen from a secure TTY. These can be specified in /etc/securetty (if present).
+auth requisite pam_securetty.so
+
+# 
+auth [success=1 default=bad] pam_google_authenticator.so secret={{ services.ssh.paths.totp_secrets_directory }}/${USER} user=root noskewadj grace_period={{ services.ssh.totp_grace_period_seconds }} [authtok_prompt=Enter code: ]
+auth [default=die] pam_faillock.so authfail
+auth requisite pam_faillock.so authsucc
+# session    include      postlogin
+auth requisite pam_env.so
+
+account requisite pam_nologin.so file={{ services.ssh.paths.ssh_nologin_location }}
+account requisite pam_sepermit.so
+account requisite pam_access.so nodefgroup accessfile={{ services.ssh.paths.ssh_pam_access_file }}
+account requisite pam_time.so
+
+session required pam_selinux.so close
+session required pam_loginuid.so require_auditd
+session required pam_limits.so
+session required pam_selinux.so open env_params
+
+# Session plugins to be executed in the user's SELinux context.
+session required pam_namespace.so
+session optional pam_keyinit.so force revoke
+session optional pam_motd.so motd=/etc/motd
+session optional pam_lastlog.so showfailed
+session optional pam_umask.so silent
+
+# Include distro-managed post-login actions based on the choices made through the authselect binary.
+# session include postlogin
