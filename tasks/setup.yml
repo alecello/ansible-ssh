@@ -4,8 +4,7 @@
   stat:
     path: "/etc/ssh/revoked-keys"
   register: ssh_server_collected
-  when:
-    - ssh_server_config.authentication.methods.pubkey.enabled
+  when: ssh_server_config.authentication.methods.pubkey.enabled
 
 - name: Create the public key revocation list
   become: true
